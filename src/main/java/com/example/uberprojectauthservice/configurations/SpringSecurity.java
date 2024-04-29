@@ -1,8 +1,12 @@
 package com.example.uberprojectauthservice.configurations;
 
+import com.example.uberprojectauthservice.filters.JwtAuthFilter;
+import com.example.uberprojectauthservice.services.JwtService;
 import com.example.uberprojectauthservice.services.UserDetailsServiceImpl;
 import org.hibernate.sql.results.graph.internal.ImmutableFetchList;
 import java.util.*;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -16,6 +20,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
@@ -23,7 +28,8 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @EnableWebSecurity
 public class SpringSecurity implements WebMvcConfigurer {
 
-
+    @Autowired
+    private JwtAuthFilter jwtAuthFilter;
     @Bean
     public UserDetailsService userDetailsService() {
         return new UserDetailsServiceImpl();
@@ -39,6 +45,9 @@ public class SpringSecurity implements WebMvcConfigurer {
                         .requestMatchers("/api/v1/auth/signup/*").permitAll()
                         .requestMatchers("/api/v1/auth/signin/*").permitAll()
                 )
+
+                .authenticationProvider(authenticationProvider())
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
 
@@ -68,6 +77,9 @@ public class SpringSecurity implements WebMvcConfigurer {
    // https://medium.com/@benaya7/cors-configuration-in-spring-security-and-webmvc-lets-get-it-out-of-the-way-47ba059ca524
     @Override
     public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/**").allowedOriginPatterns("*").allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS");
+        registry.addMapping("/**")
+                .allowCredentials(true)
+                .allowedOriginPatterns("*")
+                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS");
     }
 }
